@@ -1,0 +1,169 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get build info
+        id: build_info
+        shell: bash
+        run: |
+          SHORT_HASH=$(git rev-parse --short HEAD)
+          COMMIT_DATE=$(git log -1 --format=%cd --date=format:'%Y%m%d-%H%M%S')
+          COMMIT_MSG=$(git log -1 --format=%s)
+
+          VERSION="dev-${COMMIT_DATE}-${SHORT_HASH}"
+
+          echo "short_hash=$SHORT_HASH" >> $GITHUB_OUTPUT
+          echo "commit_date=$COMMIT_DATE" >> $GITHUB_OUTPUT
+          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build Windows installer
+        run: npm run dist:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List dist files
+        shell: bash
+        run: |
+          echo "Dist folder:"
+          ls -la dist/
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-dist-${{ steps.build_info.outputs.short_hash }}
+          path: |
+            dist/*.exe
+            dist/*.msi
+            dist/*.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Create GitHub Release
+    needs: build-windows
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Get release info
+        id: release_info
+        run: |
+          SHORT_HASH=$(git rev-parse --short HEAD)
+          COMMIT_MSG=$(git log -1 --format=%s)
+          COMMIT_AUTHOR=$(git log -1 --format=%an)
+          COMMIT_DATE=$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')
+
+          RELEASE_TAG="nightly"
+
+          echo "short_hash=$SHORT_HASH" >> $GITHUB_OUTPUT
+          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "commit_author=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "commit_date=$COMMIT_DATE" >> $GITHUB_OUTPUT
+          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Delete old nightly tag
+        continue-on-error: true
+        run: |
+          git push origin :refs/tags/nightly
+
+      - name: Create/update nightly tag
+        run: |
+          git tag -f nightly
+          git push origin nightly --force
+
+      - name: Delete old release
+        continue-on-error: true
+        uses: dev-drprasad/delete-tag-and-release@v1.1
+        with:
+          tag_name: nightly
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          delete_release: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+
+          name: |
+             LegacyLauncher Nightly Build
+
+          draft: false
+          prerelease: true
+          generate_release_notes: false
+
+          body: |
+            ## LegacyLauncher Nightly Build
+
+            ### 📦 Build Information
+            - **Commit:** `${{ steps.release_info.outputs.short_hash }}`
+            - **Author:** ${{ github.actor }}
+            - **Date:** ${{ steps.release_info.outputs.commit_date }}
+
+            ---
+
+            ### 📝 Latest Commit
+            > ${{ steps.release_info.outputs.commit_msg }}
+
+            ---
+
+            ### 📥 Installation
+            1. Download the `.exe` installer below
+            2. Run the installer
+            3. Launch LegacyLauncher
+            ---
+
+            ### ⚠️ Notes
+            This is an automatic nightly build generated from the latest commit on the repository.
+
+            ---
+
+            *Built automatically with GitHub Actions.*
+
+          files: |
+            artifacts/*
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

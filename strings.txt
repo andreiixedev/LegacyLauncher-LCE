@@ -1,0 +1,239 @@
+Terrain.png missing!
+Downloading terrain...
+Saving chunks...
+Old cobblestone texture!
+Beta vibes!
+Powered by Notch!
+Punch sheep for wool!
+Where's the Aether?
+Now with fog!
+Limited world size!
+Press F to toggle fog!
+Alpha inside!
+Still using terrain.png!
+Before hunger existed!
+Boats break instantly!
+Wooden slabs don't stack!
+Singleplayer only!
+No sprinting!
+Powered by Java 6!
+Brown wool supremacy!
+No creative mode!
+Infinite water source!
+Minecart booster included!
+Light glitches everywhere!
+Dirt background!
+Before horses!
+Before beacons!
+Punching leaves for apples!
+No tutorial needed!
+Old sounds restored!
+Brick pyramids!
+Instant mine glitch!
+Diamond armor flex!
+Working on multiplayer...
+Ancient crafting recipes!
+No achievements yet!
+Classic lava physics!
+Slimes in superflat!
+Before command blocks!
+RIP indev house!
+Survival test nostalgia!
+Spider jockey spotted!
+Old gravel noise!
+Generating level...
+Tiny render distance!
+Fancy graphics ON!
+Smooth lighting OFF!
+404 chunks not found!
+Very alpha!
+No beds yet!
+Sand falls instantly!
+Before emeralds!
+Moon made of cubes!
+Old bow accuracy!
+Arrow spam!
+Mine before daylight!
+No hunger bar!
+Classic Steve noises!
+When zombies dropped feathers!
+Before redstone lamps!
+Cake is real!
+Old TNT physics!
+Far lands ahead!
+Infdev memories!
+Before the End!
+Before nether fortresses!
+Classic water texture!
+C418 intensifies!
+Beta terrain generation!
+Spawner XP farm!
+Legacy crafting table!
+Minecraft Beta forever!
+Not enough torches!
+Monsters nearby!
+Alpha was better!
+Beta was peak!
+Old lighting engine!
+Now with ugly grass sides!
+Back when pigs ruled!
+No minimap required!
+Chunk error!
+Classic Minecraft feel!
+Before sprint-jumping!
+No shields allowed!
+One hit from lava!
+Generating mountains...
+Trees floating included!
+Legacy terrain forever!
+Old caves were scarier!
+No recipe book!
+Inventory full already!
+Back when gravel was deadly!
+Sand physics moment!
+Creepers fear cats!
+Before ocean monuments!
+Simple times!
+Classic menu panorama!
+No off-hand slot!
+Remember TooManyItems?
+No coordinates!
+Beds explode here!
+Local world only!
+LAN party vibes!
+Old zombie sounds!
+Back when stone cutters existed!
+No smooth animations!
+Rain lag included!
+Simple block game!
+Old door sounds!
+No account migration!
+Before Microsoft!
+Grass spread slowly!
+Back when villages were rare!
+No auto-jump nonsense!
+Classic hitboxes!
+Punching trees simulator!
+Sky limit: 128!
+Old world height!
+No cave update yet!
+Infinite lava trick!
+Before elytras!
+Back when diamonds mattered!
+Classic furnace sound!
+Wood tools only!
+No totems here!
+Remember Herobrine?
+Removed Herobrine.
+Removed Herobrine again.
+Actually removed Herobrine.
+Definitely removed Herobrine!
+Maybe removed Herobrine?
+Herobrine is watching.
+Entity 303 approved!
+Before the Wither!
+Simple redstone builds!
+Powered rails are expensive!
+Old sponge texture!
+Brick block house!
+Dirt hut speedrun!
+Survive the first night!
+Watch out for skeletons!
+Peaceful mode gamer!
+Old bow spam!
+No sweeping edge!
+Stone slab roofs!
+Back when wolves were new!
+TNT duplication not patched!
+Infinite minecart loop!
+The Nether is scary!
+Glowstone farming!
+Ghast screams nearby!
+Old portal sounds!
+Classic fire spread!
+Remember notch apples?
+One torch left!
+Mob farm noises!
+Cobblestone generator!
+No shaders needed!
+Runs on potatoes!
+Java edition supremacy!
+Memory leak included!
+Still loading chunks...
+Saving level...
+Connection lost!
+Timed out!
+Internal exception!
+Syntax error near creeper!
+Unexpected skeleton!
+404 diamonds not found!
+Achievement get: Nostalgia!
+Retro crafting!
+Still cube-shaped!
+Low resolution textures!
+Before texture packs!
+Painterly pack vibes!
+32x32 feels illegal!
+Sound engine bugged!
+Missingno not included!
+Not enough RAM!
+Java heap space!
+Built underground!
+Torch spammer!
+Strip mining at y11!
+Lapis is useless!
+Emeralds are new!
+Redstone wizard!
+Automatic wheat farm!
+Piston update hype!
+Adventure update ruined hunger!
+Sleeping skips thunder!
+Tiny slimes detected!
+Stronghold nearby!
+Diggy diggy hole!
+Mobs are spawning!
+No keepInventory!
+Respawn point missing!
+Steve gaming!
+Alex not found!
+Legacy skin format!
+Block placing intensifies!
+Cow tipper!
+Diamond pickaxe ready!
+Nether reactor core!
+Pocket edition memories!
+Xbox 360 vibes!
+TU4 nostalgia!
+Crafting in progress...
+Smelting iron...
+Cooked porkchops!
+Back when zombies were dumb!
+Classic spider climbing!
+Creeper crater generator!
+Water bucket clutch!
+Hardcore heartbreak!
+One life only!
+No backup saves!
+Autosave stutter!
+Minecraft.jar edited!
+ModLoader installed!
+Too many mods!
+OptiFine required!
+Connected textures!
+Fancy clouds enabled!
+Far render distance!
+Moonwalking mobs!
+Before combat update!
+Spam clicking approved!
+Sword blocking forever!
+Golden era!
+2009 called!
+Welcome to Beta!
+Straight from Alpha!
+Classic survival!
+Minecart hype!
+Mice and creepers!
+Sleep is for quitters!
+Dig deeper!
+One more cave!
+Just five more minutes!
