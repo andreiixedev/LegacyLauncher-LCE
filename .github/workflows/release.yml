@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,10 +40,29 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build Windows installer and zip
+      - name: Build Windows installer
         run: npm run dist:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create portable zip if missing
+        shell: powershell
+        run: |
+          if (-not (Get-ChildItem -Path "dist" -Filter "*.zip" -ErrorAction SilentlyContinue)) {
+            $folder = Get-ChildItem -Path "dist" -Directory | Select-Object -First 1
+
+            if ($folder) {
+              Compress-Archive -Path "$($folder.FullName)\*" -DestinationPath "dist\LegacyLauncher-portable.zip" -Force
+            } else {
+              Write-Host "No unpacked folder found. Zip will not be created."
+            }
+          }
+
+      - name: List dist files
+        shell: bash
+        run: |
+          echo "Dist folder:"
+          ls -la dist/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -51,6 +72,7 @@ jobs:
             dist/*.exe
             dist/*.zip
           if-no-files-found: error
+          retention-days: 7
 
   release:
     name: Create GitHub Release
@@ -60,6 +82,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -79,19 +103,26 @@ jobs:
           echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
           echo "commit_date=$COMMIT_DATE" >> $GITHUB_OUTPUT
 
-      - name: Create git tag
+      - name: Create git tag if missing
+        shell: bash
         run: |
-          git tag ${{ needs.build-windows.outputs.version }}
-          git push origin ${{ needs.build-windows.outputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG="${{ needs.build-windows.outputs.version }}"
+
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+            echo "Tag $TAG already exists."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
 
       - name: Create release notes
+        shell: bash
         run: |
           cat > release_body.md <<EOF
-          ## LegacyLauncher Release ${{ needs.build-windows.outputs.version }}
+          ## LegacyLauncher ${{ needs.build-windows.outputs.version }}
 
           ### 📦 Build Information
+          - **Version:** ${{ needs.build-windows.outputs.version }}
           - **Author:** ${{ steps.release_info.outputs.commit_author }}
           - **Date:** ${{ steps.release_info.outputs.commit_date }}
 
@@ -103,17 +134,36 @@ jobs:
           ---
 
           ### 📥 Downloads
-          - `.exe` = installer version
+          - `.exe` = installer
           - `.zip` = portable/files version
 
+          ---
+
+          *Built automatically with GitHub Actions.*
           EOF
 
       - name: Create GitHub Release
+        shell: bash
         run: |
-          gh release create ${{ needs.build-windows.outputs.version }} \
-            artifacts/*.exe \
-            artifacts/*.zip \
-            --title "LegacyLauncher ${{ needs.build-windows.outputs.version }}" \
-            --notes-file release_body.md
+          TAG="${{ needs.build-windows.outputs.version }}"
+
+          FILES=$(find artifacts -type f \( -name "*.exe" -o -name "*.zip" \))
+
+          echo "Files to upload:"
+          echo "$FILES"
+
+          if [ -z "$FILES" ]; then
+            echo "No .exe or .zip files found."
+            exit 1
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Uploading files..."
+            gh release upload "$TAG" $FILES --clobber
+          else
+            gh release create "$TAG" $FILES \
+              --title "LegacyLauncher $TAG" \
+              --notes-file release_body.md
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
