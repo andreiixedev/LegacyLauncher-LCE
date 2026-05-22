@@ -40,13 +40,10 @@ jobs:
         run: |
           SHORT_HASH=$(git rev-parse --short HEAD)
           COMMIT_DATE=$(git log -1 --format=%cd --date=format:'%Y%m%d-%H%M%S')
-          COMMIT_MSG=$(git log -1 --format=%s)
-
           VERSION="dev-${COMMIT_DATE}-${SHORT_HASH}"
 
           echo "short_hash=$SHORT_HASH" >> $GITHUB_OUTPUT
           echo "commit_date=$COMMIT_DATE" >> $GITHUB_OUTPUT
-          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Windows installer
@@ -96,50 +93,38 @@ jobs:
           COMMIT_AUTHOR=$(git log -1 --format=%an)
           COMMIT_DATE=$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')
 
-          RELEASE_TAG="nightly"
-
           echo "short_hash=$SHORT_HASH" >> $GITHUB_OUTPUT
           echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
-          echo "commit_author=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
           echo "commit_date=$COMMIT_DATE" >> $GITHUB_OUTPUT
-          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+          echo "release_tag=nightly" >> $GITHUB_OUTPUT
 
-      - name: Delete old nightly tag
+      - name: Delete old nightly release and tag
         continue-on-error: true
         run: |
-          git push origin :refs/tags/nightly
+          gh release delete nightly --yes --cleanup-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create/update nightly tag
+      - name: Create nightly tag
         run: |
           git tag -f nightly
           git push origin nightly --force
-
-      - name: Delete old release
-        continue-on-error: true
-        uses: dev-drprasad/delete-tag-and-release@v1.1
-        with:
-          tag_name: nightly
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          delete_release: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
-
-          name: |
-             LegacyLauncher Nightly Build
-
+          name: LegacyLauncher Nightly Build
           draft: false
           prerelease: true
           generate_release_notes: false
-
           body: |
             ## LegacyLauncher Nightly Build
 
             ### 📦 Build Information
             - **Commit:** `${{ steps.release_info.outputs.short_hash }}`
-            - **Author:** ${{ github.actor }}
+            - **Author:** ${{ steps.release_info.outputs.commit_author }}
             - **Date:** ${{ steps.release_info.outputs.commit_date }}
 
             ---
@@ -153,6 +138,7 @@ jobs:
             1. Download the `.exe` installer below
             2. Run the installer
             3. Launch LegacyLauncher
+
             ---
 
             ### ⚠️ Notes
@@ -164,6 +150,5 @@ jobs:
 
           files: |
             artifacts/*
-
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
