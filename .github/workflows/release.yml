@@ -40,76 +40,22 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build Windows installer and portable files
+      - name: Build Windows installer
         run: npm run dist:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create portable zip from unpacked folder
-        shell: powershell
-        run: |
-          # Căutăm folderul care conține executabilul principal (de obicei win-unpacked)
-          $sourceFolder = $null
-          $possibleFolders = @("win-unpacked", "LegacyLauncher-win32-x64", "release\win-unpacked")
-          foreach ($folder in $possibleFolders) {
-            $fullPath = Join-Path "dist" $folder
-            if (Test-Path $fullPath) {
-              $sourceFolder = $fullPath
-              Write-Host "Found portable folder: $sourceFolder"
-              break
-            }
-          }
-          # Dacă nu am găsit, luăm primul subfolder din dist (excluzând fișierele)
-          if (-not $sourceFolder) {
-            $subfolders = Get-ChildItem -Path "dist" -Directory
-            if ($subfolders.Count -gt 0) {
-              $sourceFolder = $subfolders[0].FullName
-              Write-Host "Using first subfolder: $sourceFolder"
-            }
-          }
-          if ($sourceFolder) {
-            $zipPath = "dist\LegacyLauncher-portable.zip"
-            Compress-Archive -Path "$sourceFolder\*" -DestinationPath $zipPath -Force
-            Write-Host "✅ Created portable zip: $zipPath"
-            # Verificare conținut
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
-            Write-Host "Contents of zip:"
-            $zip.Entries | ForEach-Object { Write-Host "  - $($_.FullName)" }
-            $zip.Dispose()
-          } else {
-            Write-Host "⚠️ No unpacked folder found. Trying to extract from installer..."
-            $installer = Get-ChildItem -Path "dist" -Filter "*.exe" | Select-Object -First 1
-            if ($installer) {
-              # Extragem installer-ul ca pe un archive (folosind 7z, disponibil pe GitHub runner)
-              $extractDir = "dist\portable_extract"
-              New-Item -ItemType Directory -Path $extractDir -Force
-              7z x "$($installer.FullName)" -o"$extractDir" -y
-              Compress-Archive -Path "$extractDir\*" -DestinationPath "dist\LegacyLauncher-portable.zip" -Force
-              Write-Host "✅ Created portable zip by extracting installer."
-            } else {
-              Write-Host "❌ No installer found. Cannot create portable zip."
-              exit 1
-            }
-          }
 
       - name: List dist files
         shell: bash
         run: |
           echo "Dist folder:"
           ls -la dist/
-          echo "If portable zip exists, show its contents:"
-          if [ -f dist/LegacyLauncher-portable.zip ]; then
-            unzip -l dist/LegacyLauncher-portable.zip | head -30
-          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-files
-          path: |
-            dist/*.exe
-            dist/*.zip
+          path: dist/*.exe
           if-no-files-found: error
           retention-days: 7
 
@@ -172,7 +118,6 @@ jobs:
 
           ### 📥 Downloads
           - \`.exe\` = installer
-          - \`.zip\` = portable version (all program files included)
 
           ---
 
@@ -184,10 +129,10 @@ jobs:
         run: |
           TAG="${{ needs.build-windows.outputs.version }}"
           shopt -s nullglob
-          files=(artifacts/*.exe artifacts/*.zip)
+          files=(artifacts/*.exe)
 
           if [ ${#files[@]} -eq 0 ]; then
-            echo "❌ No .exe or .zip files found in artifacts/"
+            echo "❌ No .exe file found in artifacts/"
             exit 1
           fi
 
