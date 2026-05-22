@@ -50,7 +50,6 @@ jobs:
         run: |
           if (-not (Get-ChildItem -Path "dist" -Filter "*.zip" -ErrorAction SilentlyContinue)) {
             $folder = Get-ChildItem -Path "dist" -Directory | Select-Object -First 1
-
             if ($folder) {
               Compress-Archive -Path "$($folder.FullName)\*" -DestinationPath "dist\LegacyLauncher-portable.zip" -Force
             } else {
@@ -98,7 +97,6 @@ jobs:
           COMMIT_MSG=$(git log -1 --format=%s)
           COMMIT_AUTHOR=$(git log -1 --format=%an)
           COMMIT_DATE=$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')
-
           echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
           echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
           echo "commit_date=$COMMIT_DATE" >> $GITHUB_OUTPUT
@@ -107,7 +105,6 @@ jobs:
         shell: bash
         run: |
           TAG="${{ needs.build-windows.outputs.version }}"
-
           if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
             echo "Tag $TAG already exists."
           else
@@ -134,8 +131,8 @@ jobs:
           ---
 
           ### 📥 Downloads
-          - `.exe` = installer
-          - `.zip` = portable/files version
+          - \`.exe\` = installer
+          - \`.zip\` = portable/files version
 
           ---
 
@@ -146,22 +143,26 @@ jobs:
         shell: bash
         run: |
           TAG="${{ needs.build-windows.outputs.version }}"
+          # Folosim array pentru a gestiona corect numele cu spații
+          shopt -s nullglob
+          files=(artifacts/*.exe artifacts/*.zip)
 
-          FILES=$(find artifacts -type f \( -name "*.exe" -o -name "*.zip" \))
-
-          echo "Files to upload:"
-          echo "$FILES"
-
-          if [ -z "$FILES" ]; then
-            echo "No .exe or .zip files found."
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "❌ No .exe or .zip files found in artifacts/"
             exit 1
           fi
 
+          echo "📦 Found files:"
+          printf '  - %s\n' "${files[@]}"
+
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists. Uploading files..."
-            gh release upload "$TAG" $FILES --clobber
+            echo "✅ Release $TAG already exists. Uploading files..."
+            for file in "${files[@]}"; do
+              gh release upload "$TAG" "$file" --clobber
+            done
           else
-            gh release create "$TAG" $FILES \
+            echo "🆕 Creating new release $TAG..."
+            gh release create "$TAG" "${files[@]}" \
               --title "LegacyLauncher $TAG" \
               --notes-file release_body.md
           fi
