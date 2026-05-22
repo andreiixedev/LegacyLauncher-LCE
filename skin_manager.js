@@ -1,5 +1,4 @@
-// skin_manager.js
-// Handles skin uploading, conversion, 3D preview, and saving to char.png
+// skin_manager.js - Improved with default skin from assets
 
 let mainMenuScene, mainMenuCamera, mainMenuRenderer, mainMenuPlayerGroup;
 let isMainSkinDragging = false;
@@ -7,7 +6,6 @@ let mainMenuSkinRenderMode = '3d';
 
 let skinScene, skinCamera, skinRenderer, skinPlayerGroup;
 let isSkinDragging = false;
-let previousSkinMousePosition = { x: 0, y: 0 };
 let processedSkinDataUrl = null;
 
 // Initialize when DOM is ready
@@ -15,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const skinInput = document.getElementById('skin-input');
     const dropZone = document.getElementById('drop-zone');
     const saveSkinBtn = document.getElementById('save-skin-btn');
-    const closeSkinBtn = document.getElementById('btn-close-skin');
 
     if (skinInput) skinInput.addEventListener('change', (e) => handleSkinFile(e.target.files[0]));
     
@@ -41,10 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (saveSkinBtn) {
         saveSkinBtn.addEventListener('click', saveSkinToDisk);
-    }
-
-    if (closeSkinBtn) {
-        closeSkinBtn.addEventListener('click', closeSkinManager);
     }
 
     // Initialize Main Menu Viewer
@@ -113,28 +106,37 @@ function initMainMenuSkinViewer() {
 
 async function loadMainMenuSkin() {
     try {
-        // Ensure install dir is available (currentInstance might not be ready)
         const installDir = await window.getInstallDir();
         if (!installDir) return;
         
         const skinPath = path.join(installDir, 'Common', 'res', 'mob', 'char.png');
+        let skinUrl = null;
         
         if (fs.existsSync(skinPath)) {
             const skinData = fs.readFileSync(skinPath);
             const blob = new Blob([skinData]);
-            const url = URL.createObjectURL(blob);
-            
-            const img = new Image();
-            img.onload = () => {
-                const isLegacy = img.height === 32;
-                updateSkinModel(img.src, isLegacy, mainMenuPlayerGroup, mainMenuSkinRenderMode);
-            };
-            img.src = url;
+            skinUrl = URL.createObjectURL(blob);
         } else {
-            console.log("No skin found at " + skinPath);
+            // Fallback to default skin from assets
+            const defaultSkinPath = path.join(__dirname, 'assets', 'default_skin.png');
+            if (fs.existsSync(defaultSkinPath)) {
+                const defaultData = fs.readFileSync(defaultSkinPath);
+                const blob = new Blob([defaultData]);
+                skinUrl = URL.createObjectURL(blob);
+            } else {
+                console.warn("No default skin found in assets/default_skin.png");
+                return;
+            }
         }
+        
+        const img = new Image();
+        img.onload = () => {
+            const isLegacy = img.height === 32;
+            updateSkinModel(img.src, isLegacy, mainMenuPlayerGroup, mainMenuSkinRenderMode);
+        };
+        img.src = skinUrl;
     } catch (e) {
-        console.warn("Could not load main menu skin (startup race condition?):", e);
+        console.warn("Could not load main menu skin:", e);
     }
 }
 
@@ -182,8 +184,8 @@ function updateSkinModel(dataUrl, isLegacy, targetGroup, renderMode = '3d') {
         const createBodyPart = (w, h, d, tex, uv, offset = 0) => {
             const geometry = new THREE.BoxGeometry(w, h, d);
             const materials = [
-                createFaceMaterial(tex, uv.left[0], uv.left[1], uv.left[2], uv.left[3]), // Left (Standard MC "Right")
-                createFaceMaterial(tex, uv.right[0], uv.right[1], uv.right[2], uv.right[3]), // Right (Standard MC "Left")
+                createFaceMaterial(tex, uv.left[0], uv.left[1], uv.left[2], uv.left[3]),
+                createFaceMaterial(tex, uv.right[0], uv.right[1], uv.right[2], uv.right[3]),
                 createFaceMaterial(tex, uv.top[0], uv.top[1], uv.top[2], uv.top[3]),
                 createFaceMaterial(tex, uv.bottom[0], uv.bottom[1], uv.bottom[2], uv.bottom[3]),
                 createFaceMaterial(tex, uv.front[0], uv.front[1], uv.front[2], uv.front[3]),
@@ -294,15 +296,11 @@ function openSkinManager() {
     modal.style.display = 'flex';
     modal.style.opacity = '1';
     
-    // Clear previous state in modal
     const previewContainer = document.getElementById('preview-container');
     if (previewContainer) previewContainer.classList.add('hidden');
     
-    const sysMsg = document.getElementById('sys-message');
-    if (sysMsg) sysMsg.classList.add('hidden');
-    
-    // Load current skin into preview (optional, maybe we only want to see uploaded ones)
-    // loadCurrentSkinToPreview(); 
+    const prompt = document.getElementById('upload-prompt');
+    if (prompt) prompt.style.display = 'block';
 }
 
 function closeSkinManager() {
@@ -311,7 +309,6 @@ function closeSkinManager() {
     setTimeout(() => {
         modal.style.display = 'none';
         
-        // Reset state
         const prompt = document.getElementById('upload-prompt');
         if (prompt) prompt.style.display = 'block';
         
@@ -344,7 +341,7 @@ function handleSkinFile(file) {
     reader.readAsDataURL(file);
 }
 
-function processSkinImage(img, srcUrl, isInitialLoad = false) {
+function processSkinImage(img, srcUrl) {
     const canvas = document.getElementById('skin-canvas');
     const ctx = canvas.getContext('2d');
     const formatLabel = document.getElementById('format-label');
@@ -369,20 +366,11 @@ function processSkinImage(img, srcUrl, isInitialLoad = false) {
     
     previewContainer.classList.remove('hidden');
     
-    if (isInitialLoad) {
-        if(formatLabel) formatLabel.textContent = "Current Skin";
-        if(statusMessage) statusMessage.innerHTML = "<span class='text-blue-400 font-black' style='color: #60a5fa;'>LOADED FROM DISK</span>";
-        if(saveBtn) {
-            saveBtn.textContent = "SAVED";
-            saveBtn.classList.add('disabled');
-        }
-    } else {
-        if(formatLabel) formatLabel.textContent = isLegacy ? "64x32 (Legacy)" : "64x64 (Modern)";
-        if(statusMessage) statusMessage.innerHTML = isLegacy ? "<span class='text-green-400 font-black' style='color: #4ade80;'>LEGACY READY</span>" : "<span class='text-yellow-400 font-black' style='color: #facc15;'>CONVERTED TO 64x32</span>";
-        if(saveBtn) {
-            saveBtn.textContent = "SAVE SKIN";
-            saveBtn.classList.remove('disabled');
-        }
+    if (formatLabel) formatLabel.textContent = isLegacy ? "64x32 (Legacy)" : "64x64 (Modern)";
+    if (statusMessage) statusMessage.innerHTML = isLegacy ? "<span style='color: #4ade80;'>LEGACY READY</span>" : "<span style='color: #facc15;'>READY</span>";
+    if (saveBtn) {
+        saveBtn.textContent = "SAVE SKIN";
+        saveBtn.classList.remove('disabled');
     }
     
     if (!skinScene) initPreviewEngine();
@@ -453,7 +441,6 @@ async function saveSkinToDisk() {
         // Refresh main menu skin
         loadMainMenuSkin();
         
-        // Close modal after short delay?
         setTimeout(closeSkinManager, 1000);
 
     } catch (e) {
@@ -462,8 +449,42 @@ async function saveSkinToDisk() {
     }
 }
 
+async function resetSkinToDefault() {
+    try {
+        const installDir = await window.getInstallDir();
+        const skinPath = path.join(installDir, 'Common', 'res', 'mob', 'char.png');
+        
+        const defaultSkinSource = path.join(__dirname, 'assets', 'default_skin.png');
+        
+        if (!fs.existsSync(defaultSkinSource)) {
+            window.showToast("Default skin file not found! Please place default_skin.png in the assets folder.");
+            return;
+        }
+        
+        const destDir = path.dirname(skinPath);
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+        
+        fs.copyFileSync(defaultSkinSource, skinPath);
+        
+        window.showToast("Skin reset to default!");
+        
+        if (window.loadMainMenuSkin) {
+            window.loadMainMenuSkin();
+        }
+        
+        closeSkinManager();
+        
+    } catch (e) {
+        console.error("Reset skin error:", e);
+        window.showToast("Failed to reset skin: " + e.message);
+    }
+}
+
 // Global Export
 window.openSkinManager = openSkinManager;
 window.initMainMenuSkinViewer = initMainMenuSkinViewer;
 window.loadMainMenuSkin = loadMainMenuSkin;
 window.toggleMainSkinRenderMode = toggleMainSkinRenderMode;
+window.resetSkinToDefault = resetSkinToDefault;

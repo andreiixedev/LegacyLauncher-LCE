@@ -362,16 +362,37 @@ body::before {
     min-width: 240px;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
     gap: 12px;
 }
 
+/* ===== Skin Viewer Container - Fix vizibilitate ===== */
 .skin-viewer-container {
     width: 100%;
     height: 280px;
+    background: var(--bg-tertiary);
     border-radius: 20px;
     overflow: hidden;
     cursor: grab;
-    background: var(--bg-tertiary);
+    position: relative;
+    display: block;
+    margin-bottom: 12px;
+}
+
+/* Asigură că canvas-ul generat de Three.js ocupă tot spațiul */
+.skin-viewer-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Dacă containerul este gol (fallback vizual) */
+.skin-viewer-container:empty {
+    background: rgba(184, 123, 93, 0.2);
+    border: 2px dashed var(--accent);
 }
 
 /* Buttons */
@@ -489,6 +510,7 @@ body::before {
 .skin-actions {
     display: flex;
     gap: 10px;
+    width: 100%;
 }
 
 .skin-action-btn {
@@ -792,6 +814,7 @@ body::before {
     background-size: cover;
 }
 
+/* ===== Instances List (Improved Text Visibility) ===== */
 .instances-list-container,
 .servers-list-container,
 .snapshots-list-container {
@@ -804,14 +827,287 @@ body::before {
 }
 
 .instance-item {
-    padding: 10px;
+    padding: 12px;
     border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    margin-bottom: 8px;
 }
 
 .instance-item:last-child {
     border-bottom: none;
+    margin-bottom: 0;
 }
 
+.instance-item .instance-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.instance-item .instance-details {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.instance-item.active {
+    background: var(--accent);
+}
+
+.instance-item.active .instance-name,
+.instance-item.active .instance-details {
+    color: white;
+}
+
+/* ===== Minecraft Style for Servers Modal ===== */
+#servers-modal .modal-box {
+    background: #8B5A2B;
+    background-image: repeating-linear-gradient(
+        45deg,
+        #7c4a2a 0px, #7c4a2a 2px,
+        #8b5a2b 2px, #8b5a2b 8px
+    );
+    border: 4px solid #5C3A21;
+    border-radius: 16px;
+    box-shadow: 0 0 0 4px #C9A87C, 0 8px 20px rgba(0,0,0,0.5);
+    font-family: 'Courier New', 'Quicksand', monospace;
+}
+
+#servers-modal .modal-title {
+    background: #2c1a0e;
+    color: #ffd966;
+    padding: 8px 16px;
+    border-radius: 40px;
+    display: inline-block;
+    width: auto;
+    margin: -10px auto 16px auto;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 20px;
+    border: 2px solid #ffd966;
+    box-shadow: inset 0 0 4px #00000033, 0 2px 0 #5C3A21;
+}
+
+#servers-modal .mc-input {
+    background: #f0e6d2;
+    border: 2px solid #5C3A21;
+    border-radius: 8px;
+    color: #2c1a0e;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+}
+
+#servers-modal .mc-label {
+    color: #ffd966;
+    text-shadow: 2px 2px 0 #2c1a0e;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+#servers-modal .btn-mc {
+    background: #5C3A21;
+    color: #ffd966;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 4px 0 #2c1a0e;
+    transition: 0.05s linear;
+}
+
+#servers-modal .btn-mc:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #2c1a0e;
+}
+
+#servers-modal .servers-list-container {
+    background: #2c1a0e;
+    border: 2px solid #5C3A21;
+    border-radius: 12px;
+}
+
+#servers-modal .instance-item {
+    background: #f0e6d2;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    color: #2c1a0e;
+}
+
+#servers-modal .instance-item div div:first-child {
+    color: #2c1a0e;
+    font-weight: bold;
+}
+
+#servers-modal .instance-item div div:last-child {
+    color: #5C3A21;
+}
+
+/* ===== Steam Deck UI Mode ===== */
+body.steamdeck-mode {
+    font-size: 18px;
+}
+
+body.steamdeck-mode .title-bar {
+    height: 56px;
+}
+
+body.steamdeck-mode .title-bar-text {
+    font-size: 24px;
+}
+
+body.steamdeck-mode .win-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 28px;
+    border-radius: 16px;
+}
+
+body.steamdeck-mode .music-btn-header {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+}
+
+body.steamdeck-mode .theme-toggle {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+}
+
+body.steamdeck-mode .sidebar {
+    width: 320px;
+    padding: 20px;
+}
+
+body.steamdeck-mode .sidebar-title {
+    font-size: 28px;
+}
+
+body.steamdeck-mode .update-item {
+    padding: 16px;
+}
+
+body.steamdeck-mode .update-item .commit-msg {
+    font-size: 14px;
+}
+
+body.steamdeck-mode .btn-mc {
+    padding: 16px 28px;
+    font-size: 20px;
+    margin-bottom: 16px;
+    border-radius: 60px;
+}
+
+body.steamdeck-mode .btn-play {
+    font-size: 36px;
+    padding: 18px;
+}
+
+body.steamdeck-mode .version-label {
+    font-size: 18px;
+}
+
+body.steamdeck-mode .version-select-box {
+    padding: 12px 20px;
+    font-size: 16px;
+}
+
+body.steamdeck-mode .button-group .btn-mc {
+    font-size: 18px;
+    padding: 12px 16px;
+}
+
+body.steamdeck-mode .skin-action-btn {
+    font-size: 16px;
+    padding: 12px;
+}
+
+body.steamdeck-mode .modal-box {
+    max-width: 95vw;
+    max-height: 90vh;
+    padding: 28px 32px;
+    border-radius: 48px;
+}
+
+body.steamdeck-mode .modal-title {
+    font-size: 32px;
+}
+
+body.steamdeck-mode .mc-input {
+    padding: 14px 20px;
+    font-size: 16px;
+    border-radius: 40px;
+}
+
+body.steamdeck-mode .mc-label {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+body.steamdeck-mode .modal-btn {
+    padding: 12px 28px;
+    font-size: 18px;
+    min-width: 140px;
+}
+
+body.steamdeck-mode .instances-list-container,
+body.steamdeck-mode .servers-list-container {
+    max-height: 400px;
+}
+
+body.steamdeck-mode .instance-item {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 24px;
+}
+
+body.steamdeck-mode .instance-item .instance-name {
+    font-size: 18px;
+}
+
+body.steamdeck-mode .instance-item .instance-details {
+    font-size: 13px;
+}
+
+body.steamdeck-mode .skin-viewer-container {
+    height: 400px;
+}
+
+body.steamdeck-mode .skin-modal-box .preview-3d {
+    min-width: 300px;
+}
+
+body.steamdeck-mode .drop-zone {
+    padding: 36px;
+}
+
+body.steamdeck-mode .upload-title {
+    font-size: 22px;
+}
+
+body.steamdeck-mode .upload-subtitle {
+    font-size: 14px;
+}
+
+body.steamdeck-mode .gallery-container {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+body.steamdeck-mode .gallery-action-btn {
+    font-size: 14px;
+    padding: 8px 12px;
+}
+
+body.steamdeck-mode #toast {
+    bottom: 100px;
+    padding: 12px 32px;
+    font-size: 16px;
+}
+
+/* Gallery */
 .gallery-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -847,99 +1143,132 @@ body::before {
     color: var(--text-secondary);
 }
 
+/* Skin Modal Improvements */
 .skin-modal-box {
-    max-width: 850px;
+    max-width: 950px;
     width: 90vw;
 }
 
 .drop-zone {
     background: var(--bg-tertiary);
     border-radius: 24px;
-    padding: 24px;
+    padding: 28px;
     text-align: center;
     cursor: pointer;
     box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    transition: all 0.2s;
+    border: 2px dashed var(--accent);
+}
+
+.drop-zone:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-light);
 }
 
 .upload-title {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     color: var(--accent);
 }
 
 .upload-subtitle {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text-muted);
-    margin-top: 6px;
+    margin-top: 8px;
 }
 
 .preview-container {
-    margin-top: 16px;
+    margin-top: 20px;
 }
 
 .preview-row {
     display: flex;
-    gap: 16px;
+    gap: 20px;
     flex-wrap: wrap;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .preview-3d {
-    flex: 1;
-    min-width: 200px;
+    flex: 1.5;
+    min-width: 250px;
     background: var(--bg-tertiary);
-    border-radius: 20px;
-    padding: 12px;
+    border-radius: 24px;
+    padding: 16px;
     position: relative;
+    box-shadow: inset 2px 2px 6px var(--shadow-dark), inset -2px -2px 6px var(--shadow-light);
 }
 
 .preview-badge {
     position: absolute;
-    bottom: 8px;
-    left: 8px;
+    bottom: 12px;
+    left: 12px;
     background: var(--accent);
     color: white;
-    padding: 3px 10px;
-    border-radius: 16px;
-    font-size: 10px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
 }
 
 .preview-info {
     flex: 1;
-    min-width: 180px;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .pixelated-canvas {
     width: 100%;
     max-width: 200px;
+    image-rendering: crisp-edges;
     image-rendering: pixelated;
-    border-radius: 12px;
-    margin-bottom: 12px;
+    border-radius: 16px;
+    background: var(--bg-secondary);
+    padding: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .info-panel {
     background: var(--bg-tertiary);
-    border-radius: 16px;
-    padding: 12px;
-    margin-bottom: 12px;
+    border-radius: 20px;
+    padding: 14px;
+    margin-bottom: 8px;
 }
 
 .info-panel div {
     display: flex;
     justify-content: space-between;
-    margin: 6px 0;
-    font-size: 11px;
+    margin: 8px 0;
+    font-size: 12px;
+    color: var(--text-primary);
 }
 
 .status-message {
-    font-size: 12px;
+    font-size: 13px;
     text-align: center;
+    font-weight: bold;
 }
 
 .save-skin-btn {
     width: 100%;
-    margin-top: 12px;
+    margin-top: 16px;
+    padding: 12px;
+    font-size: 16px;
+}
+
+/* Skin reset button */
+.skin-reset-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    margin-top: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.skin-reset-btn:hover {
+    background: var(--accent-dark);
+    color: white;
 }
 
 #toast {

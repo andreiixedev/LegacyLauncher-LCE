@@ -19,13 +19,14 @@ function createWindow() {
     center: true,
     resizable: true,
     frame: false, 
-    icon: path.join(__dirname, '512x512.png'),
+    icon: path.join(__dirname, 'assets', '512x512.png'),
     transparent: true,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true, 
       contextIsolation: false,
-      enableRemoteModule: true
+      enableRemoteModule: true,
+      additionalArguments: ['--autoplay-policy=no-user-gesture-required']
     }
   });
 

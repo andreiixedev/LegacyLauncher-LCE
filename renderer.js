@@ -13,7 +13,10 @@ const TARGET_FILE = "ReleaseMCLCE.7z";
 const TARGET_RELEASE_TAG = "LCE-MC";
 const TARGET_ARCHIVE_PASSWORD = "cd47ac9b83d30926ddfe3b42764ed387a157f281e30ee97b9fc09c882638001c";
 const LAUNCHER_REPO = "andreiixedev/LegacyLauncher-LCE";
-const PATCH_NOTES_REPO = "andreiixedev/LegacyLauncher-LCE"; // Patch notes from this repo only
+const PATCH_NOTES_REPO = "andreiixedev/LegacyLauncher-LCE";
+
+// Numele fișierului muzical din assets
+const ASSETS_MUSIC_FILE = "Riyhsal - Pacific.mp3";
 
 let instances = [];
 let currentInstanceId = null;
@@ -465,32 +468,44 @@ const UiSoundManager = {
 };
 
 // ============================================================
-// MUSIC MANAGER
+// MUSIC MANAGER (redă "Riyhsal - Pacific.mp3" din assets)
 // ============================================================
 
 const MusicManager = {
     audio: new Audio(),
-    playlist: [],
-    currentIndex: -1,
     enabled: false,
+    userInteracted: false,
+    musicPath: null,
 
     async init() {
         this.enabled = await Store.get('legacy_music_enabled', true);
         this.audio.volume = await Store.get('legacy_music_volume', 0.5);
+        this.audio.loop = true;
         this.updateIcon();
-        this.audio.onended = () => this.playNext();
-        if (this.enabled) {
-            this.start();
-        }
         
+        // Calea către fișierul MP3 din assets
+        this.musicPath = path.join(__dirname, 'assets', ASSETS_MUSIC_FILE);
+        
+        // Setup one-time user gesture listener
+        const unlockAudio = async () => {
+            if (this.userInteracted) return;
+            this.userInteracted = true;
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+            document.removeEventListener('keydown', unlockAudio);
+            if (this.enabled && this.audio.paused && this.musicPath && fs.existsSync(this.musicPath)) {
+                await this.audio.play().catch(e => console.warn("Play after gesture failed:", e));
+            }
+        };
+        ['click', 'touchstart', 'keydown'].forEach(ev => {
+            document.addEventListener(ev, unlockAudio, { once: false, passive: true });
+        });
+
         const slider = document.getElementById('volume-slider');
         const percentText = document.getElementById('volume-percent');
         const updatePercent = () => {
-            if (percentText) {
-                percentText.textContent = Math.round(this.audio.volume * 100) + "%";
-            }
+            if (percentText) percentText.textContent = Math.round(this.audio.volume * 100) + "%";
         };
-
         if (slider) {
             slider.value = this.audio.volume;
             updatePercent();
@@ -500,59 +515,29 @@ const MusicManager = {
                 await Store.set('legacy_music_volume', parseFloat(slider.value));
             };
         }
-    },
 
-    async scan() {
-        try {
-            const installDir = await getInstallDir();
-            const musicPath = path.join(installDir, 'music', 'music');
-            
-            if (fs.existsSync(musicPath)) {
-                const files = fs.readdirSync(musicPath);
-                this.playlist = files
-                    .filter(f => f.toLowerCase().endsWith('.ogg'))
-                    .map(f => path.join(musicPath, f));
-                
-                for (let i = this.playlist.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [this.playlist[i], this.playlist[j]] = [this.playlist[j], this.playlist[i]];
-                }
-                return this.playlist.length > 0;
-            }
-        } catch (e) {
-            console.error("Music scan error:", e);
+        if (this.enabled) {
+            await this.start();
         }
-        return false;
     },
 
     async start() {
-        if (this.playlist.length === 0) {
-            const success = await this.scan();
-            if (!success) return;
-        }
-        if (this.playlist.length > 0 && this.audio.paused) {
-            this.playNext();
-        }
-    },
-
-    playNext() {
-        if (!this.enabled || this.playlist.length === 0) return;
+        if (!this.enabled) return;
         
-        let nextIndex;
-        if (this.playlist.length > 1) {
-            do {
-                nextIndex = Math.floor(Math.random() * this.playlist.length);
-            } while (nextIndex === this.currentIndex);
-        } else {
-            nextIndex = 0;
+        if (!this.musicPath || !fs.existsSync(this.musicPath)) {
+            console.warn(`Fișierul muzical nu există: ${this.musicPath}`);
+            return;
         }
         
-        this.currentIndex = nextIndex;
-        this.audio.src = `file://${this.playlist[this.currentIndex]}`;
-        this.audio.play().catch(e => {
-            console.error("Audio playback error:", e);
-            setTimeout(() => this.playNext(), 1000);
-        });
+        if (!this.userInteracted) {
+            console.log("Muzică pregătită, așteaptă interacțiunea utilizatorului...");
+            return;
+        }
+        
+        if (this.audio.paused) {
+            this.audio.src = `file://${this.musicPath}`;
+            await this.audio.play().catch(e => console.warn("Eroare redare muzică:", e));
+        }
     },
 
     stop() {
@@ -565,7 +550,7 @@ const MusicManager = {
         await Store.set('legacy_music_enabled', this.enabled);
         this.updateIcon();
         if (this.enabled) {
-            this.start();
+            await this.start();
         } else {
             this.stop();
         }
@@ -573,19 +558,10 @@ const MusicManager = {
 
     updateIcon() {
         const btnHeader = document.getElementById('music-toggle-header');
-        const btnOld = document.getElementById('music-toggle');
-        
-        const updateBtn = (btn) => {
-            if (!btn) return;
-            if (this.enabled) {
-                btn.classList.remove('muted');
-            } else {
-                btn.classList.add('muted');
-            }
-        };
-        
-        updateBtn(btnHeader);
-        updateBtn(btnOld);
+        if (btnHeader) {
+            if (this.enabled) btnHeader.classList.remove('muted');
+            else btnHeader.classList.add('muted');
+        }
     }
 };
 
@@ -802,21 +778,28 @@ async function renderInstancesList() {
         const isActive = inst.id === currentInstanceId;
         const item = document.createElement('div');
         item.className = `instance-item ${isActive ? 'active' : ''}`;
-        item.style.cssText = `display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-light); background: ${isActive ? 'var(--accent)' : 'transparent'}; border-radius: 16px; margin-bottom: 8px;`;
-        
         item.innerHTML = `
-            <div style="flex: 1;">
-                <div style="font-weight: bold; font-size: 14px;">${inst.name} ${isActive ? '✓' : ''}</div>
-                <div style="font-size: 10px; color: var(--text-muted);">${inst.repo}</div>
-                <div style="font-size: 9px; color: var(--text-muted);">${inst.installPath}</div>
+            <div class="instance-info">
+                <div class="instance-name">${escapeHtml(inst.name)} ${isActive ? '✓' : ''}</div>
+                <div class="instance-details">${escapeHtml(inst.repo)}</div>
+                <div class="instance-details">${escapeHtml(inst.installPath)}</div>
             </div>
-            <div style="display: flex; gap: 6px;">
-                <div class="btn-mc" style="padding: 6px 12px; font-size: 11px; margin: 0;" onclick="openSnapshotsManager('${inst.id}')">BACKUPS</div>
-                ${!isActive ? `<div class="btn-mc" style="padding: 6px 12px; font-size: 11px; margin: 0;" onclick="switchInstance('${inst.id}')">SWITCH</div>` : ''}
-                <div class="btn-mc" style="padding: 6px 12px; font-size: 11px; margin: 0; ${isActive ? 'opacity: 0.5; pointer-events: none;' : ''}" onclick="deleteInstance('${inst.id}')">DELETE</div>
+            <div class="instance-actions">
+                <div class="btn-mc instance-action-btn" onclick="openSnapshotsManager('${inst.id}')">BACKUPS</div>
+                ${!isActive ? `<div class="btn-mc instance-action-btn" onclick="switchInstance('${inst.id}')">SWITCH</div>` : ''}
+                <div class="btn-mc instance-action-btn ${isActive ? 'disabled' : ''}" onclick="deleteInstance('${inst.id}')">DELETE</div>
             </div>
         `;
         container.appendChild(item);
+    });
+}
+
+function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
     });
 }
 
@@ -1094,7 +1077,7 @@ async function monitorProcess(proc) {
 }
 
 // ============================================================
-// GITHUB DATA FETCHING (Patch notes from andreiixedev/LegacyLauncher-LCE only)
+// GITHUB DATA FETCHING
 // ============================================================
 
 async function fetchGitHubData() {
@@ -1126,16 +1109,13 @@ async function fetchGitHubData() {
     }
 
     try {
-        // Fetch releases for GAME (from instance repo)
         const relRes = await fetch(`https://api.github.com/repos/${repo}/releases`);
-        
-        // Fetch commits for PATCH NOTES (from andreiixedev/LegacyLauncher-LCE only)
         const patchNotesRes = await fetch(`https://api.github.com/repos/${PATCH_NOTES_REPO}/commits?per_page=30`);
 
         if (!relRes.ok || !patchNotesRes.ok) throw new Error("Rate Limited or API Error");
 
         releasesData = (await relRes.json()).filter(rel => rel.tag_name === TARGET_RELEASE_TAG);
-        commitsData = await patchNotesRes.json(); // commitsData now comes ONLY from andreiixedev/LegacyLauncher-LCE
+        commitsData = await patchNotesRes.json();
 
         populateVersions();
         populateUpdatesSidebar();
@@ -1191,13 +1171,6 @@ function populateVersions() {
     updatePlayButtonText();
 }
 
-// Helper function to escape HTML
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 function populateUpdatesSidebar() {
     const list = document.getElementById('updates-list');
     if (!list) return;
@@ -1215,7 +1188,6 @@ function populateUpdatesSidebar() {
         const shortSha = c.sha.substring(0, 7);
         let message = c.commit.message;
         
-        // Format commit message - split title and body if exists
         const messageLines = message.split('\n');
         const title = messageLines[0];
         const body = messageLines.slice(1).join('\n').trim();
@@ -1469,7 +1441,7 @@ async function handleElectronFlow(url) {
         }
         if (!fs.existsSync(extractDir)) fs.mkdirSync(extractDir, { recursive: true });
         await extractArchive(archivePath, extractDir);
-        await MusicManager.scan();
+        // Nu mai scanăm muzica din joc – păstrăm doar MP3-ul din assets
         if (MusicManager.enabled) MusicManager.start();
         if (fs.existsSync(backupDir)) {
             for (const item of preserveList) {
@@ -1570,8 +1542,7 @@ async function loadServers() {
         servers.forEach((s, index) => {
             const item = document.createElement('div');
             item.className = 'instance-item';
-            item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-light);';
-            item.innerHTML = `<div><div style="font-weight: bold; font-size: 14px;">${s.name}</div><div style="font-size: 10px; color: var(--text-muted);">${s.ip}:${s.port}</div></div><div class="btn-mc" style="padding: 4px 12px; font-size: 11px; margin: 0;" onclick="removeServer(${index})">DELETE</div>`;
+            item.innerHTML = `<div><div class="instance-name">${escapeHtml(s.name)}</div><div class="instance-details">${escapeHtml(s.ip)}:${escapeHtml(s.port)}</div></div><div class="btn-mc instance-action-btn" onclick="removeServer(${index})">DELETE</div>`;
             container.appendChild(item);
         });
     } catch (e) { console.error("Failed to load servers:", e); container.innerHTML = '<div class="text-center text-muted py-4">Error loading servers.</div>'; }
@@ -1931,16 +1902,15 @@ async function renderSnapshotsList() {
     inst.snapshots.sort((a,b) => b.timestamp - a.timestamp).forEach((snap) => {
         const item = document.createElement('div');
         item.className = 'instance-item';
-        item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-light);';
         const date = new Date(snap.timestamp).toLocaleString();
         item.innerHTML = `
             <div>
-                <div style="font-weight: bold; font-size: 13px;">${snap.tag || 'Unknown Version'}</div>
-                <div style="font-size: 10px; color: var(--text-muted);">${date}</div>
+                <div class="instance-name">${escapeHtml(snap.tag || 'Unknown Version')}</div>
+                <div class="instance-details">${date}</div>
             </div>
             <div style="display: flex; gap: 6px;">
-                <div class="btn-mc" style="padding: 4px 10px; font-size: 10px; margin: 0;" onclick="rollbackToSnapshot('${snap.id}')">ROLLBACK</div>
-                <div class="btn-mc" style="padding: 4px 10px; font-size: 10px; margin: 0;" onclick="deleteSnapshot('${snap.id}')">DELETE</div>
+                <div class="btn-mc instance-action-btn" onclick="rollbackToSnapshot('${snap.id}')">ROLLBACK</div>
+                <div class="btn-mc instance-action-btn" onclick="deleteSnapshot('${snap.id}')">DELETE</div>
             </div>
         `;
         container.appendChild(item);
@@ -2050,6 +2020,43 @@ async function deleteSnapshot(snapId) {
 }
 
 // ============================================================
+// SKIN RESET FUNCTION (copies from assets/default_skin.png)
+// ============================================================
+
+async function resetSkinToDefault() {
+    try {
+        const installDir = await getInstallDir();
+        const skinPath = path.join(installDir, 'Common', 'res', 'mob', 'char.png');
+        
+        const defaultSkinSource = path.join(__dirname, 'assets', 'default_skin.png');
+        
+        if (!fs.existsSync(defaultSkinSource)) {
+            showToast("Default skin file not found! Please place default_skin.png in the assets folder.");
+            return;
+        }
+        
+        const destDir = path.dirname(skinPath);
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+        
+        fs.copyFileSync(defaultSkinSource, skinPath);
+        
+        showToast("Skin reset to default!");
+        
+        if (window.loadMainMenuSkin) {
+            window.loadMainMenuSkin();
+        }
+        
+        closeSkinManager();
+        
+    } catch (e) {
+        console.error("Reset skin error:", e);
+        showToast("Failed to reset skin: " + e.message);
+    }
+}
+
+// ============================================================
 // DESKTOP SHORTCUT (Linux)
 // ============================================================
 
@@ -2137,7 +2144,6 @@ window.onload = async () => {
         GamepadManager.init();
         UiSoundManager.init();
 
-        // Sync music button state
         const musicBtnHeader = document.getElementById('music-toggle-header');
         if (musicBtnHeader && MusicManager.enabled) {
             musicBtnHeader.classList.remove('muted');
@@ -2246,5 +2252,6 @@ window.toggleGallery = toggleGallery;
 window.viewScreenshot = viewScreenshot;
 window.deleteScreenshot = deleteScreenshot;
 window.openScreenshotsDir = openScreenshotsDir;
+window.resetSkinToDefault = resetSkinToDefault;
 
 ensureDesktopShortcut();

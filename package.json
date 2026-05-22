@@ -1,6 +1,6 @@
 {
   "name": "legacylauncher",
-  "version": "3.5.0",
+  "version": "3.5.12",
   "description": "A Minecraft: Legacy Console Edition launcher",
   "main": "main.js",
   "scripts": {
@@ -18,7 +18,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "512x512.png"
+      "icon": "assets/512x512.png"
     },
     "nsis": {
       "oneClick": false,
@@ -30,7 +30,7 @@
         "flatpak"
       ],
       "category": "Game",
-      "icon": "512x512.png",
+      "icon": "assets/512x512.png",
       "desktop": {
         "entry": {
           "Name": "Minecraft LCE Launcher",
@@ -46,7 +46,7 @@
       "target": [
         "dmg"
       ],
-      "icon": "512x512.png",
+      "icon": "assets/512x512.png",
       "category": "public.app-category.games"
     },
     "files": [
